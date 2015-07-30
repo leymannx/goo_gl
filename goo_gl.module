@@ -1,0 +1,54 @@
+<?php
+
+/**
+ * @file
+ * Module file for goo_gl module.
+ */
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ *
+ * Adds custom fieldset to the node form, and attach ajax behaviour for vertical
+ * panels to update the settings description.
+ *
+ * @see goo_gl.js
+ */
+function goo_gl_form_alter(&$form, $form_state, $form_id) {
+  // First, check for the node type configuration form.
+  if ($form_id == 'node_type_form') {
+    dpm($form);
+    // Alter the node type's configuration form to add our setting. We don't
+    // need to worry about saving this value back to the variable, the form
+    // we're altering will do it for us.
+    $form['goo_gl'] = array(
+      '#type' => 'fieldset',
+      '#title' => 'goo.gl',
+      '#collapsible' => TRUE,
+      '#collapsed' => FALSE,
+      '#tree' => TRUE,
+      '#weight' => -99,
+      // The #group value must match the name of the vertical tabs element.
+      // In most cases, this is 'additional_settings'.
+      '#group' => 'additional_settings',
+      // Vertical tabs provide its most usable appearance when they are used to
+      // include a summary of the information contained in the fieldset. To do
+      // this, we attach additional JavaScript to handle changing the summary
+      // when form settings are changed.
+      '#attached' => array(
+        'js' => array(
+          'vertical-tabs' => drupal_get_path('module', 'goo_gl') . '/goo_gl.js',
+        ),
+      ),
+    );
+
+    $enabled = implode('', variable_get('goo_gl_' . $form['#node_type']->type, 'disabled')) == 'enabled';
+    $form['goo_gl']['enabled'] = array(
+      '#type' => 'checkbox',
+      '#title' => t('Enable'),
+      '#default_value' => $enabled,
+    );
+
+    // TO DO delete variable on module uninstallation
+    // variable_del('goo_gl_article');
+  }
+}
