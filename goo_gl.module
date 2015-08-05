@@ -112,6 +112,20 @@ function goo_gl_node_insert($node) {
   }
 }
 
+/**
+* Implements of hook_node_update()
+*/
+ function goo_gl_node_update($node){
+  //Calling the hook_node_insert() once again to do updating process
+  db_update('goo_gl_url')
+  ->fields(array(
+      'nid' => $node->nid,
+      'vid' => $node->vid,
+      'url' => 'goo.gl/IJ1p3'
+  ))
+  ->execute();
+}
+
 function _goo_gl_get_url($nid) {
   if(!empty($nid)) {
     // action
