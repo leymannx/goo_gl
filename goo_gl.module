@@ -14,41 +14,123 @@
  * @see goo_gl.js
  */
 function goo_gl_form_alter(&$form, $form_state, $form_id) {
-  // First, check for the node type configuration form.
+
+  // 1. First, check for the node type configuration form.
   if ($form_id == 'node_type_form') {
-    dpm($form);
     // Alter the node type's configuration form to add our setting. We don't
     // need to worry about saving this value back to the variable, the form
     // we're altering will do it for us.
     $form['goo_gl'] = array(
-      '#type' => 'fieldset',
-      '#title' => 'goo.gl',
-      '#collapsible' => TRUE,
-      '#collapsed' => FALSE,
-      '#tree' => TRUE,
-      '#weight' => -99,
+      '#type'         => 'fieldset',
+      '#title'        => 'goo.gl',
+      '#collapsible'  => TRUE,
+      '#collapsed'    => FALSE,
+      // '#tree'         => TRUE,
+      '#weight'       => -99,
       // The #group value must match the name of the vertical tabs element.
       // In most cases, this is 'additional_settings'.
-      '#group' => 'additional_settings',
+      '#group'        => 'additional_settings',
       // Vertical tabs provide its most usable appearance when they are used to
       // include a summary of the information contained in the fieldset. To do
       // this, we attach additional JavaScript to handle changing the summary
       // when form settings are changed.
-      '#attached' => array(
+      '#attached'     => array(
         'js' => array(
           'vertical-tabs' => drupal_get_path('module', 'goo_gl') . '/goo_gl.js',
         ),
       ),
     );
 
-    $enabled = implode('', variable_get('goo_gl_' . $form['#node_type']->type, 'disabled')) == 'enabled';
-    $form['goo_gl']['enabled'] = array(
-      '#type' => 'checkbox',
-      '#title' => t('Enable'),
-      '#default_value' => $enabled,
+    $enabled = variable_get('goo_gl_type_' . $form['#node_type']->type, FALSE) == TRUE;
+    $form['goo_gl']['goo_gl_type'] = array(
+      '#type'           => 'checkbox',
+      '#title'          => t('Enable'),
+      '#default_value'  => $enabled,
     );
 
     // TO DO delete variable on module uninstallation
     // variable_del('goo_gl_article');
   }
+
+  // 2. Here we check to see if the type and node field are set. If so, it could
+  // be a node edit form.
+  elseif (isset($form['type']) && isset($form['#node']) && $form['type']['#value'] . '_node_form' == $form_id) {
+    // If goo_gl is enabled for this node type, we insert our control
+    // $node = $form['#node'];
+
+    $enabled = variable_get('goo_gl_type_' . $form['#node']->type, FALSE) == TRUE;
+    if ($enabled) {
+
+      drupal_add_js(array('goo_gl' => array('enabled' => $enabled)), array('type' => 'setting'));
+
+      $form['goo_gl'] = array(
+        '#type'         => 'fieldset',
+        '#title'        => 'goo.gl',
+        '#collapsible'  => TRUE,
+        '#collapsed'    => FALSE,
+        // '#tree'         => TRUE,
+        '#weight'       => -99,
+        '#group'        => 'additional_settings',
+        '#attached'     => array(
+          'js' => array(
+            'vertical-tabs' => drupal_get_path('module', 'goo_gl') . '/goo_gl.js',
+          ),
+        ),
+      );
+
+      $form['goo_gl']['goo_gl_url'] = array(
+        '#type' => 'textfield',
+        '#title' => t('Use this setting instead'),
+        '#default_value' => '',
+        // '#description' => t('As you type into this field, the summary will be updated in the tab.'),
+      );
+
+    }
+  }
 }
+
+function goo_gl_node_save($node) {
+  $node->goo_gl_url = $node->goo_gl_url;
+  dpm($node, 'NODE SAVE');
+}
+
+/**
+ * Implements hook_node_insert().
+ *
+ * As a new node is being inserted into the database, we need to do our own
+ * database inserts.
+ */
+function goo_gl_node_insert($node) {
+  // Notice that we are ignoring any revision information using $node->nid
+  // db_insert('goo_gl_url')
+  // ->fields(array(
+  //     'nid' => $node->nid,
+  //     'vid' => $node->vid,
+  // ))
+  // ->execute();
+  dpm($node, 'NODE INSERT');
+}
+
+/**
+ * Implements hook_node_insert().
+ *
+ * As a new node is being inserted into the database, we need to do our own
+ * database inserts.
+ */
+// function goo_gl_node_insert($node) {
+
+//   $enabled = variable_get('goo_gl_' . $node->type, 'disabled');
+//   $enabled = is_array($enabled) ? implode('', $enabled) : $enabled;
+//   $enabled = $enabled == 'enabled';
+
+//   if ($enabled) {
+//     // Notice that we are ignoring any revision information using $node->nid
+//     db_insert('goo_gl')
+//     ->fields(array(
+//         'nid' => $node->nid,
+//         'vid' => $node->vid,
+//         'url' => 'goo.gl/IJ1p37'
+//     ))
+//     ->execute();
+//   }
+// }
