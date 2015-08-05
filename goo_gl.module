@@ -78,20 +78,17 @@ function goo_gl_form_alter(&$form, $form_state, $form_id) {
         ),
       );
 
+      $nid = isset($form['nid']['#value']) ? $form['nid']['#value'] : '';
+      $default = _goo_gl_get_url($nid);
       $form['goo_gl']['goo_gl_url'] = array(
         '#type' => 'textfield',
         '#title' => t('Use this setting instead'),
-        '#default_value' => '',
+        '#default_value' => $default,
         // '#description' => t('As you type into this field, the summary will be updated in the tab.'),
       );
 
     }
   }
-}
-
-function goo_gl_node_save($node) {
-  $node->goo_gl_url = $node->goo_gl_url;
-  dpm($node, 'NODE SAVE');
 }
 
 /**
@@ -101,36 +98,29 @@ function goo_gl_node_save($node) {
  * database inserts.
  */
 function goo_gl_node_insert($node) {
-  // Notice that we are ignoring any revision information using $node->nid
-  // db_insert('goo_gl_url')
-  // ->fields(array(
-  //     'nid' => $node->nid,
-  //     'vid' => $node->vid,
-  // ))
-  // ->execute();
-  dpm($node, 'NODE INSERT');
+
+  $enabled = variable_get('goo_gl_type_' . $node->type, FALSE) == TRUE;
+  if ($enabled) {
+    // Notice that we are ignoring any revision information using $node->nid
+    db_insert('goo_gl_url')
+    ->fields(array(
+        'nid' => $node->nid,
+        'vid' => $node->vid,
+        'url' => 'goo.gl/IJ1p37'
+    ))
+    ->execute();
+  }
 }
 
-/**
- * Implements hook_node_insert().
- *
- * As a new node is being inserted into the database, we need to do our own
- * database inserts.
- */
-// function goo_gl_node_insert($node) {
-
-//   $enabled = variable_get('goo_gl_' . $node->type, 'disabled');
-//   $enabled = is_array($enabled) ? implode('', $enabled) : $enabled;
-//   $enabled = $enabled == 'enabled';
-
-//   if ($enabled) {
-//     // Notice that we are ignoring any revision information using $node->nid
-//     db_insert('goo_gl')
-//     ->fields(array(
-//         'nid' => $node->nid,
-//         'vid' => $node->vid,
-//         'url' => 'goo.gl/IJ1p37'
-//     ))
-//     ->execute();
-//   }
-// }
+function _goo_gl_get_url($nid) {
+  if(!empty($nid)) {
+    // action
+    $results = db_query('select * from {goo_gl_url} where nid = :nid', array(':nid' => $nid));
+    foreach($results as $result) {
+      dpm($result);
+      return $result->url;
+    }
+  } else {
+    return '';
+  }
+}
