@@ -13,51 +13,50 @@
  *
  * @see goo_gl.js
  */
-function goo_gl_form_alter(&$form, $form_state, $form_id) {
+function goo_gl_form_node_type_form_alter(&$form, &$form_state, $form_id) {
 
-  // 1. First, check for the node type configuration form.
-  if ($form_id == 'node_type_form') {
-    // Alter the node type's configuration form to add our setting. We don't
-    // need to worry about saving this value back to the variable, the form
-    // we're altering will do it for us.
-    $form['goo_gl'] = array(
-      '#type'         => 'fieldset',
-      '#title'        => 'goo.gl',
-      '#collapsible'  => TRUE,
-      '#collapsed'    => FALSE,
-      // '#tree'         => TRUE,
-      '#weight'       => -99,
-      // The #group value must match the name of the vertical tabs element.
-      // In most cases, this is 'additional_settings'.
-      '#group'        => 'additional_settings',
-      // Vertical tabs provide its most usable appearance when they are used to
-      // include a summary of the information contained in the fieldset. To do
-      // this, we attach additional JavaScript to handle changing the summary
-      // when form settings are changed.
-      '#attached'     => array(
-        'js' => array(
-          'vertical-tabs' => drupal_get_path('module', 'goo_gl') . '/goo_gl.js',
-        ),
+  // 1. NODE TYPE CONFIGURATION FORM
+  $form['goo_gl'] = array(
+    '#type'         => 'fieldset',
+    '#title'        => 'goo.gl',
+    '#collapsible'  => TRUE,
+    '#collapsed'    => FALSE,
+    // '#tree'         => TRUE,
+    '#weight'       => -99,
+    '#group'        => 'additional_settings',
+    // Vertical tabs provide its most usable appearance when they are used to
+    // include a summary of the information contained in the fieldset. To do
+    // this, we attach additional JavaScript to handle changing the summary
+    // when form settings are changed.
+    '#attached'     => array(
+      'js' => array(
+        'vertical-tabs' => drupal_get_path('module', 'goo_gl') . '/goo_gl.js',
       ),
-    );
+    ),
+  );
 
-    $enabled = variable_get('goo_gl_type_' . $form['#node_type']->type, FALSE) == TRUE;
-    $form['goo_gl']['goo_gl_type'] = array(
-      '#type'           => 'checkbox',
-      '#title'          => t('Enable'),
-      '#default_value'  => $enabled,
-    );
+  $enabled = variable_get('goo_gl_type_' . $form['#node_type']->type, FALSE) == TRUE;
+  $form['goo_gl']['goo_gl_type'] = array(
+    '#type'           => 'checkbox',
+    '#title'          => t('Enable'),
+    '#default_value'  => $enabled,
+  );
+}
 
-    // TO DO delete variable on module uninstallation
-    // variable_del('goo_gl_article');
-  }
+/**
+ * Implements hook_form_alter().
+ *
+ * Adds custom fieldset to the node edit form, and attach ajax behaviour for vertical
+ * panels to update the settings description.
+ *
+ * @see goo_gl.js
+ */
+function goo_gl_form_alter(&$form, &$form_state, $form_id) {
 
-  // 2. Here we check to see if the type and node field are set. If so, it could
-  // be a node edit form.
-  elseif (isset($form['type']) && isset($form['#node']) && $form['type']['#value'] . '_node_form' == $form_id) {
+  // 2. NODE EDIT FORM
+  if (isset($form['type']) && isset($form['#node']) && $form['type']['#value'] . '_node_form' == $form_id) {
+
     // If goo_gl is enabled for this node type, we insert our control
-    // $node = $form['#node'];
-
     $enabled = variable_get('goo_gl_type_' . $form['#node']->type, FALSE) == TRUE;
     if ($enabled) {
 
@@ -86,7 +85,6 @@ function goo_gl_form_alter(&$form, $form_state, $form_id) {
         '#default_value' => $default,
         // '#description' => t('As you type into this field, the summary will be updated in the tab.'),
       );
-
     }
   }
 }
@@ -105,8 +103,7 @@ function goo_gl_node_insert($node) {
     db_insert('goo_gl_url')
     ->fields(array(
         'nid' => $node->nid,
-        'vid' => $node->vid,
-        'url' => 'goo.gl/IJ1p37'
+        'url' => $node->goo_gl_url,
     ))
     ->execute();
   }
@@ -116,22 +113,25 @@ function goo_gl_node_insert($node) {
 * Implements of hook_node_update()
 */
  function goo_gl_node_update($node){
-  //Calling the hook_node_insert() once again to do updating process
+
   db_update('goo_gl_url')
   ->fields(array(
       'nid' => $node->nid,
-      'vid' => $node->vid,
-      'url' => 'goo.gl/IJ1p3'
+      'url' => $node->goo_gl_url,
   ))
   ->execute();
 }
 
+/**
+ * Helper
+ */
 function _goo_gl_get_url($nid) {
+
   if(!empty($nid)) {
     // action
     $results = db_query('select * from {goo_gl_url} where nid = :nid', array(':nid' => $nid));
     foreach($results as $result) {
-      dpm($result);
+      // dpm($result);
       return $result->url;
     }
   } else {
