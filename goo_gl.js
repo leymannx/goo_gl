@@ -26,12 +26,12 @@ Drupal.behaviors.vertical_tabs_exampleFieldsetSummaries = {
     } else if (path.indexOf('node/add') >= 0 || (path.indexOf('node/') >= 0 && path.indexOf('/edit') >= 0)) {
 
       $('fieldset#edit-goo-gl', context).drupalSetSummary(function (context) {
-        var enabled = Drupal.settings.goo_gl.enabled;
-        if (enabled === true) {
-          return Drupal.t('Enabled');
-        } else {
-          return Drupal.t('Disabled');
-        }
+
+        var path = $('.form-item-goo-gl-url input').val();
+
+        return path ?
+          Drupal.t('URL: @alias', { '@alias': path }) :
+          Drupal.t('Enabled');
       });
     
     }
