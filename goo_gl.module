@@ -8,8 +8,8 @@
 /**
  * Implements hook_form_FORM_ID_alter().
  *
- * Adds custom fieldset to the node form, and attach ajax behaviour for vertical
- * panels to update the settings description.
+ * Adds custom fieldset to the node type configuration form
+ * where goo_gl simply can be made available/unavailable for a node type
  *
  * @see goo_gl.js
  */
@@ -46,8 +46,9 @@ function goo_gl_form_node_type_form_alter(&$form, &$form_state, $form_id) {
 /**
  * Implements hook_form_alter().
  *
- * Adds custom fieldset to the node edit form, and attach ajax behaviour for vertical
- * panels to update the settings description.
+ * Adds custom fieldset to the node edit form
+ * with a checkbox to reload the goo_gl url
+ * and a textfield to display it or manually enter a url
  *
  * @see goo_gl.js
  */
@@ -123,7 +124,7 @@ function goo_gl_node_insert($node) {
 }
 
 /**
- * Helper
+ * Helper to @return string goo_gl_url by NID
  */
 function _goo_gl_get_url($nid) {
 
