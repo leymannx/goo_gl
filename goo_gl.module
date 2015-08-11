@@ -100,7 +100,7 @@ function goo_gl_node_insert($node) {
 
   $enabled = variable_get('goo_gl_type_' . $node->type, FALSE) == TRUE;
   if ($enabled) {
-    // Notice that we are ignoring any revision information using $node->nid
+
     db_insert('goo_gl_url')
     ->fields(array(
         'nid' => $node->nid,
@@ -111,16 +111,36 @@ function goo_gl_node_insert($node) {
 }
 
 /**
-* Implements of hook_node_update()
-*/
- function goo_gl_node_update($node){
+ * Implements hook_node_update()
+ */
+function goo_gl_node_update($node) {
 
-  db_update('goo_gl_url')
-  ->fields(array(
-      'nid' => $node->nid,
-      'url' => $node->goo_gl_url,
-  ))
-  ->execute();
+  $enabled = variable_get('goo_gl_type_' . $node->type, FALSE) == TRUE;
+  if ($enabled) {
+
+    db_update('goo_gl_url')
+    ->fields(array(
+        'nid' => $node->nid,
+        'url' => $node->goo_gl_url,
+    ))
+    ->execute();
+  }
+}
+
+/**
+ * Implements hook_module_implements_alter()
+ *
+ * To have the alias path available in hook_node_insert() we let any alias
+ * path creating modules act first and move goo_gl to the end of the list.
+ */
+function goo_gl_module_implements_alter(&$implementations, $hook) {
+
+  if ($hook == 'node_insert' || $hook == 'node_update') {
+    // Move goo_gl_node_insert()/-update() to the end of the list. 
+    $group = $implementations['goo_gl'];
+    unset($implementations['goo_gl']);
+    $implementations['goo_gl'] = $group;
+  }
 }
 
 /**
