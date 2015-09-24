@@ -41,6 +41,14 @@ function goo_gl_form_node_type_form_alter(&$form, &$form_state, $form_id) {
     '#title'          => t('Enable'),
     '#default_value'  => $enabled,
   );
+
+  // TO DO:
+  // 1. Option disablen bis ein API key eingegeben ist.
+  // 2. Option anbieten, ob per default der Systhempfad oder der Aliaspfad
+  // genommen werden soll zum Generieren der Short URL.
+  // 3. Option anbieten, was beim Ändern des Aliaspfads passieren soll. Weil
+  // manche Leute haben ein Redirect-Modul und wollen auch nicht, dass ihre
+  // Analytics auf die Short-URL verloren gehen.
 }
 
 /**
@@ -84,10 +92,15 @@ function goo_gl_form_alter(&$form, &$form_state, $form_id) {
         '#type' => 'textfield',
         '#title' => t('Use this setting instead'),
         '#default_value' => $default,
-        // '#description' => t('As you type into this field, the summary will be updated in the tab.'),
       );
     }
   }
+
+  // TO DO:
+  // 1. das Feld nicht mehr editable machen, weil da soll ja jetzt kein user-
+  // generated Cotent mehr rein.
+  // 2. Variable abfragen was mit Re-Generate ist (siehe oben) und pro Node
+  // individuell einstellbar machen.
 }
 
 /**
@@ -101,13 +114,25 @@ function goo_gl_node_insert($node) {
   $enabled = variable_get('goo_gl_type_' . $node->type, FALSE) == TRUE;
   if ($enabled) {
 
+    $path = 'node/'.$node->nid;
+    $absolute_path = url($path, array('absolute' => TRUE, 'alias' => TRUE));
+
+    $alias = drupal_get_path_alias($path);
+    $absolute_alias = url($alias, array('absolute' => TRUE, 'alias' => TRUE));
+
+    // For no we will
+    $goo_gl_url = _goo_gl_short_url($absolute_path, $absolute_alias);
+
     db_insert('goo_gl_url')
-    ->fields(array(
+      ->fields(array(
         'nid' => $node->nid,
-        'url' => $node->goo_gl_url,
-    ))
-    ->execute();
+        'url' => $goo_gl_url,
+      ))
+      ->execute();
   }
+
+  // TO DO: Variable abfragen, ob es per default der Systhempfad oder der Aliaspfad sein
+  // soll (siehe oben).
 }
 
 /**
@@ -115,13 +140,24 @@ function goo_gl_node_insert($node) {
  */
 function goo_gl_node_update($node) {
 
-  $enabled = variable_get('goo_gl_type_' . $node->type, FALSE) == TRUE;
-  if ($enabled) {
+  // $enabled = variable_get('goo_gl_type_' . $node->type, FALSE) == TRUE;
+  // if ($enabled) {
 
-    db_update('goo_gl_url')
-    ->condition('nid', $node->nid, '=')
-    ->fields(array('url' => $node->goo_gl_url))
-    ->execute();
+  //   $path = 'node/'.$node->nid;
+  //   $alias = drupal_get_path_alias($path);
+
+  //   db_update('goo_gl_url')
+  //     ->condition('nid', $node->nid, '=')
+  //     ->fields(array('url' => $node->goo_gl_url))
+  //     ->execute();
+  // }
+
+  // TO DO: Gucken, ob sich der Aliaspfad geändert hat und eine neue URL genieren,
+  // aber vielleicht sollte das auch optional sein, immerhin gehen dann auch die
+  // Analytics verloren und man würde das eher über Redirects machen ?!
+  if (isset($node->goo_gl_url)) {
+    $headers = get_headers($node->goo_gl_url , true);
+    dpm($headers['Location']);
   }
 }
 
@@ -148,12 +184,58 @@ function _goo_gl_get_url($nid) {
 
   if(!empty($nid)) {
     // action
-    $results = db_query('select * from {goo_gl_url} where nid = :nid', array(':nid' => $nid));
+    $results = db_query('select url from {goo_gl_url} where nid = :nid', array(':nid' => $nid));
     foreach($results as $result) {
       // dpm($result);
-      return $result->url;
+      return $result;
     }
   } else {
     return '';
   }
+}
+
+function _goo_gl_short_url($path, $alias) {
+
+  $long_url = (!empty($alias)) ? $alias : $path;
+  $api_key = variable_get('goo_gl_api_key'); 
+   
+  // No need to modify any of the code below.
+  $post_data = array('longUrl' => $long_url, 'key' => $api_key);
+  $json_data = json_encode($post_data);
+  $curl_obj = curl_init();
+
+  curl_setopt($curl_obj, CURLOPT_URL, 'https://www.googleapis.com/urlshortener/v1/url?key='.$api_key); 
+  curl_setopt($curl_obj, CURLOPT_RETURNTRANSFER, 1);
+  curl_setopt($curl_obj, CURLOPT_SSL_VERIFYPEER, 0);
+  curl_setopt($curl_obj, CURLOPT_HEADER, 0);
+  curl_setopt($curl_obj, CURLOPT_HTTPHEADER, array('Content-type:application/json'));
+  curl_setopt($curl_obj, CURLOPT_POST, 1);
+  curl_setopt($curl_obj, CURLOPT_POSTFIELDS, $json_data);
+
+  $response = curl_exec($curl_obj);
+  $json = json_decode($response);
+  curl_close($curl_obj);
+
+  return $json->id;
+}
+
+// TO DO:
+// Settings-Form und Menu-Entry, um API-Key eingeben zu können
+
+/**
+ * Implements hook_menu().
+ */
+function goo_gl_menu() {
+
+  $items['admin/config/search/goo_gl'] = array(
+    'title'             => 'Google URL Shortener',
+    'description'       => 'Enter an API key.',
+    'weight'            => 100,
+    'page callback'     => 'drupal_get_form',
+    'page arguments'    => array('goo_gl_api_key_form'),
+    'access arguments'  => array('administer site configuration'),
+    'file'              => 'goo_gl.admin.inc'
+  );
+  
+  return $items;
 }
