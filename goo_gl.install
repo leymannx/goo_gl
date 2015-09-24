@@ -23,7 +23,7 @@ function goo_gl_schema() {
       'url' => array(
         'description' => 'The shortened URL.',
         'type' => 'varchar',
-        'length' => 19,
+        'length' => 20,
         'not null' => TRUE,
         'default' => '',
       ),
