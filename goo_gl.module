@@ -119,10 +119,8 @@ function goo_gl_node_update($node) {
   if ($enabled) {
 
     db_update('goo_gl_url')
-    ->fields(array(
-        'nid' => $node->nid,
-        'url' => $node->goo_gl_url,
-    ))
+    ->condition('nid', $node->nid, '=')
+    ->fields(array('url' => $node->goo_gl_url))
     ->execute();
   }
 }
