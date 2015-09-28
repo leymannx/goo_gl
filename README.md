@@ -10,9 +10,9 @@ Get a Google API key at https://console.developers.google.com/
 
 For now the following will work:
 * Install module.
-* Go to `admin/config/search/goo_gl and enter your Google API key.
+* Go to `admin/config/search/goo_gl` and enter your Google API key.
 * Go to a content type settings form (e.g. `admin/structure/types/manage/article`) and enable goo_gl in the available vertical tabs form.
-* Add a new node and have a goo.gl short URL generated automatically, visible in the vertical tabs and available from $node->goo_gl_url`.
+* Add a new node and have a goo.gl short URL generated automatically, visible in the vertical tabs and available from `$node->goo_gl_url`.
 
 TO DO:
 * Should there be an option available to chose between alias path or internal path as source for shortening?
