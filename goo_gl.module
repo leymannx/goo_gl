@@ -16,14 +16,15 @@
 function goo_gl_form_node_type_form_alter(&$form, &$form_state, $form_id) {
 
   // 1. NODE TYPE CONFIGURATION FORM
+  $api_key = variable_get('goo_gl_api_key');
   $form['goo_gl'] = array(
     '#type'         => 'fieldset',
     '#title'        => 'goo.gl',
     '#collapsible'  => TRUE,
     '#collapsed'    => FALSE,
-    // '#tree'         => TRUE,
     '#weight'       => -99,
     '#group'        => 'additional_settings',
+    '#disabled'     => isset($api_key) ? (empty($api_key) ? TRUE : FALSE) : TRUE,
     // Vertical tabs provide its most usable appearance when they are used to
     // include a summary of the information contained in the fieldset. To do
     // this, we attach additional JavaScript to handle changing the summary
@@ -35,20 +36,24 @@ function goo_gl_form_node_type_form_alter(&$form, &$form_state, $form_id) {
     ),
   );
 
-  $enabled = variable_get('goo_gl_type_' . $form['#node_type']->type, FALSE) == TRUE;
-  $form['goo_gl']['goo_gl_type'] = array(
+  $form['goo_gl']['note'] = array(
+    '#markup'       => 'goo_gl will be available only after you entered a Google API key on the <a href="/admin/config/search/goo_gl">goo_gl config page</a>.',
+  );
+
+  $enabled = variable_get('goo_gl_enabled_' . $form['#node_type']->type, FALSE) == TRUE;
+  $form['goo_gl']['goo_gl_enabled'] = array(
     '#type'           => 'checkbox',
     '#title'          => t('Enable'),
     '#default_value'  => $enabled,
   );
 
   // TO DO:
-  // 1. Option disablen bis ein API key eingegeben ist.
-  // 2. Option anbieten, ob per default der Systhempfad oder der Aliaspfad
+  // 1. Option anbieten, ob per default der Systhempfad oder der Aliaspfad
   // genommen werden soll zum Generieren der Short URL.
-  // 3. Option anbieten, was beim Ändern des Aliaspfads passieren soll. Weil
+  // 2. Option anbieten, was beim Ändern des Aliaspfads passieren soll. Weil
   // manche Leute haben ein Redirect-Modul und wollen auch nicht, dass ihre
-  // Analytics auf die Short-URL verloren gehen.
+  // Analytics auf die Short-URL verloren gehen. Soll die ShURL regeniert
+  // werden oder soll sie bleiben?
 }
 
 /**
@@ -66,7 +71,7 @@ function goo_gl_form_alter(&$form, &$form_state, $form_id) {
   if (isset($form['type']) && isset($form['#node']) && $form['type']['#value'] . '_node_form' == $form_id) {
 
     // If goo_gl is enabled for this node type, we insert our control
-    $enabled = variable_get('goo_gl_type_' . $form['#node']->type, FALSE) == TRUE;
+    $enabled = variable_get('goo_gl_enabled_' . $form['#node']->type, FALSE) == TRUE;
     if ($enabled) {
 
       drupal_add_js(array('goo_gl' => array('enabled' => $enabled)), array('type' => 'setting'));
@@ -76,7 +81,6 @@ function goo_gl_form_alter(&$form, &$form_state, $form_id) {
         '#title'        => 'goo.gl',
         '#collapsible'  => TRUE,
         '#collapsed'    => FALSE,
-        // '#tree'         => TRUE,
         '#weight'       => -99,
         '#group'        => 'additional_settings',
         '#attached'     => array(
@@ -89,17 +93,16 @@ function goo_gl_form_alter(&$form, &$form_state, $form_id) {
       $nid = isset($form['nid']['#value']) ? $form['nid']['#value'] : '';
       $default = _goo_gl_get_url($nid);
       $form['goo_gl']['goo_gl_url'] = array(
-        '#type' => 'textfield',
-        '#title' => t('Use this setting instead'),
-        '#default_value' => $default,
+        '#type'           => 'textfield',
+        '#disabled'       => TRUE,
+        '#title'          => t('goo.gl short URL'),
+        '#default_value'  => $default,
       );
     }
   }
 
   // TO DO:
-  // 1. das Feld nicht mehr editable machen, weil da soll ja jetzt kein user-
-  // generated Cotent mehr rein.
-  // 2. Variable abfragen was mit Re-Generate ist (siehe oben) und pro Node
+  // 1. Variable abfragen was mit Re-Generate ist (siehe oben) und pro Node
   // individuell einstellbar machen.
 }
 
@@ -111,7 +114,7 @@ function goo_gl_form_alter(&$form, &$form_state, $form_id) {
  */
 function goo_gl_node_insert($node) {
 
-  $enabled = variable_get('goo_gl_type_' . $node->type, FALSE) == TRUE;
+  $enabled = variable_get('goo_gl_enabled_' . $node->type, FALSE) == TRUE;
   if ($enabled) {
 
     $path = 'node/'.$node->nid;
@@ -140,7 +143,7 @@ function goo_gl_node_insert($node) {
  */
 function goo_gl_node_update($node) {
 
-  // $enabled = variable_get('goo_gl_type_' . $node->type, FALSE) == TRUE;
+  // $enabled = variable_get('goo_gl_enabled_' . $node->type, FALSE) == TRUE;
   // if ($enabled) {
 
   //   $path = 'node/'.$node->nid;
@@ -194,11 +197,19 @@ function _goo_gl_get_url($nid) {
   }
 }
 
+/**
+ * Helper to create goo.gl short URL from path alias if available.
+ * Fallback is to create short URL from node path.
+ *
+ * @param $path Drupal node path (node/123)
+ * @param $alias Node path alias
+ * @return mixed goo.gl short URL
+ */
 function _goo_gl_short_url($path, $alias) {
 
   $long_url = (!empty($alias)) ? $alias : $path;
-  $api_key = variable_get('goo_gl_api_key'); 
-   
+  $api_key = variable_get('goo_gl_api_key');
+
   // No need to modify any of the code below.
   $post_data = array('longUrl' => $long_url, 'key' => $api_key);
   $json_data = json_encode($post_data);
@@ -219,16 +230,16 @@ function _goo_gl_short_url($path, $alias) {
   return $json->id;
 }
 
-// TO DO:
-// Settings-Form und Menu-Entry, um API-Key eingeben zu können
-
 /**
  * Implements hook_menu().
+ *
+ * Adds a menu entry on the config page to display a form to enter a mandatory
+ * Google API key.
  */
 function goo_gl_menu() {
 
   $items['admin/config/search/goo_gl'] = array(
-    'title'             => 'Google URL Shortener',
+    'title'             => 'goo_gl (Google URL Shortener)',
     'description'       => 'Enter an API key.',
     'weight'            => 100,
     'page callback'     => 'drupal_get_form',
@@ -239,3 +250,4 @@ function goo_gl_menu() {
   
   return $items;
 }
+
