@@ -43,7 +43,7 @@ function goo_gl_uninstall() {
 
   $results = db_select('variable', 'v')
     ->fields('v', array('name'))
-    ->condition('name', 'goo_gl_type_%', 'LIKE')
+    ->condition('name', 'goo_gl_enabled_%', 'LIKE')
     ->execute();
   // Loop through and delete each of our variables.
   foreach ($results as $result) {

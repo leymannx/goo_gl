@@ -14,7 +14,7 @@ Drupal.behaviors.vertical_tabs_exampleFieldsetSummaries = {
       // Use the fieldset class to identify the vertical tab element
       $('fieldset#edit-goo-gl', context).drupalSetSummary(function (context) {
         // Depending on the checkbox status, the settings will be customized
-        if ($('#edit-goo-gl-type', context).attr('checked')) {
+        if ($('#edit-goo-gl-enabled', context).attr('checked')) {
           // return Drupal.checkPlain($('#edit-goo-gl-custom-setting', context).val());
           return Drupal.t('Enabled');
         } else {
@@ -30,7 +30,8 @@ Drupal.behaviors.vertical_tabs_exampleFieldsetSummaries = {
         var path = $('.form-item-goo-gl-url input').val();
 
         return path ?
-          Drupal.t('URL: @alias', { '@alias': path }) :
+          //Drupal.t('URL: @alias', { '@alias': path }) :
+          Drupal.t(path) :
           Drupal.t('Enabled');
       });
     
