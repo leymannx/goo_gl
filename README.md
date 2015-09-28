@@ -21,4 +21,4 @@ TO DO:
   But honestly I'ld guess users want to keep the current short URL and their statistics and simply apply a redirect from the old alias to the new alias manually.
 * Offer an option to have the short URL automatically set as shortlink or canonical if that makes sense?
 
-# Please feel free to fork or add comment if you wish something to get implemented.
+# Please feel free to fork or add comments if you wish something to get implemented or think something could be made better.
