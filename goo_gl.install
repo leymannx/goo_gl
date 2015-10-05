@@ -7,6 +7,7 @@
 
 /**
  * Implements hook_schema().
+ * Creates a new table in the database to store our short URL together with a nid.
  */
 function goo_gl_schema() {
 
@@ -37,6 +38,22 @@ function goo_gl_schema() {
 }
 
 /**
+ * Implements hook_install().
+ * Adds a new field to the node table.
+ */
+function goo_gl_install() {
+  // Add the new field to the node table
+  $field = array(
+    'description' => 'The shortened URL.',
+    'type' => 'varchar',
+    'length' => 20,
+    'not null' => TRUE,
+    'default' => '',
+  );
+  db_add_field('node', 'goo_gl_url', $field);
+}
+
+/**
  * Implements hook_uninstall().
  */
 function goo_gl_uninstall() {
@@ -51,6 +68,8 @@ function goo_gl_uninstall() {
   }
   // the goo_gl_url table in contrast will get
   // deleted automatically on uninstallation
+
+  variable_del('goo_gl_api_key');
 }
 
 // function goo_gl_install() {

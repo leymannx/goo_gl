@@ -132,6 +132,11 @@ function goo_gl_node_insert($node) {
         'url' => $goo_gl_url,
       ))
       ->execute();
+
+    db_update('node') // Table name no longer needs {}
+      ->fields(array('goo_gl_url' => $goo_gl_url))
+      ->condition('nid', $node->nid)
+      ->execute();
   }
 
   // TO DO: Variable abfragen, ob es per default der Systhempfad oder der Aliaspfad sein
@@ -251,3 +256,13 @@ function goo_gl_menu() {
   return $items;
 }
 
+function goo_gl_schema_alter(&$schema) {
+  // Add the new field to the schema cache
+  $schema['node']['fields']['goo_gl_url'] = array(
+    'description' => 'The shortened URL.',
+    'type' => 'varchar',
+    'length' => 20,
+    'not null' => TRUE,
+    'default' => '',
+  );
+}
