@@ -42,15 +42,9 @@ function goo_gl_schema() {
  * Adds a new field to the node table.
  */
 function goo_gl_install() {
-  // Add the new field to the node table
-  $field = array(
-    'description' => 'The shortened URL.',
-    'type' => 'varchar',
-    'length' => 20,
-    'not null' => TRUE,
-    'default' => '',
-  );
-  db_add_field('node', 'goo_gl_url', $field);
+
+  $schema = drupal_get_schema('node');
+  db_add_field('node', 'goo_gl_url', $schema['fields']['goo_gl_url']);
 }
 
 /**
@@ -66,21 +60,12 @@ function goo_gl_uninstall() {
   foreach ($results as $result) {
     variable_del($result->name);
   }
+
   // the goo_gl_url table in contrast will get
   // deleted automatically on uninstallation
 
+  // Delete API key on uninstallation
   variable_del('goo_gl_api_key');
+  // Drop the goo_gl_url from node table
+  db_drop_field('node', 'goo_gl_url');
 }
-
-// function goo_gl_install() {
-//   db_add_field('node', 'goo_gl_url', array(
-//     'type' => 'varchar',
-//     'length' => 12,
-//     'not null' => TRUE,
-//     'default' => '',
-//   ));
-// }
-
-// function goo_gl_uninstall() {
-//   db_drop_field('node', 'goo_gl_url');
-// }
