@@ -123,9 +123,9 @@ function goo_gl_node_insert($node) {
     $alias = drupal_get_path_alias($path);
     $absolute_alias = url($alias, array('absolute' => TRUE, 'alias' => TRUE));
 
-    // For no we will
     $goo_gl_url = _goo_gl_short_url($absolute_path, $absolute_alias);
 
+    // Adds a new row to the singular goo_gl_url table.
     db_insert('goo_gl_url')
       ->fields(array(
         'nid' => $node->nid,
@@ -133,12 +133,12 @@ function goo_gl_node_insert($node) {
       ))
       ->execute();
 
+    // Updates the goo_gl_url field of the corresponding node in the node table.
     db_update('node')
       ->fields(array('goo_gl_url' => $goo_gl_url))
       ->condition('nid', $node->nid)
       ->execute();
   }
-
   // TO DO: Variable abfragen, ob es per default der Systhempfad oder der Aliaspfad sein
   // soll (siehe oben).
 }
@@ -164,6 +164,7 @@ function goo_gl_node_update($node) {
   // aber vielleicht sollte das auch optional sein, immerhin gehen dann auch die
   // Analytics verloren und man würde das eher über Redirects machen ?!
 
+  // Check where the goo.gl URL is redirecting to
 //  if (isset($node->goo_gl_url)) {
 //    $headers = get_headers($node->goo_gl_url, true);
 //    dpm($headers['Location']);
@@ -193,10 +194,11 @@ function _goo_gl_get_url($nid) {
 
   if(!empty($nid)) {
     // action
-    $results = db_query('select url from {goo_gl_url} where nid = :nid', array(':nid' => $nid));
+//    $results = db_query('select url from {goo_gl_url} where nid = :nid', array(':nid' => $nid));
+    $results = db_query('select goo_gl_url from {node} where nid = :nid', array(':nid' => $nid));
     foreach($results as $result) {
       // dpm($result);
-      return $result;
+      return $result->goo_gl_url;
     }
   } else {
     return '';
