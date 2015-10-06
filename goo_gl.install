@@ -12,10 +12,10 @@
 function goo_gl_schema() {
 
   $schema['goo_gl_url'] = array(
-    'description' => 'Stores information of extended content.',
+    'description' => 'Stores Google short URLs with corresponding node IDs.',
     'fields' => array(
       'nid'    => array(
-        'description' => 'Node ID that the rating is applied to.',
+        'description' => 'Node ID the short URL is created for.',
         'type' => 'int',
         'unsigned' => TRUE,
         'not null' => TRUE,

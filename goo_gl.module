@@ -37,7 +37,7 @@ function goo_gl_form_node_type_form_alter(&$form, &$form_state, $form_id) {
   );
 
   $form['goo_gl']['note'] = array(
-    '#markup'       => 'goo_gl will be available only after you entered a Google API key on the <a href="/admin/config/search/goo_gl">goo_gl config page</a>.',
+    '#markup'       => 'goo.gl will be available only after you entered a Google API key on the <a href="/admin/config/search/goo_gl">goo.gl config page</a>.',
   );
 
   $enabled = variable_get('goo_gl_enabled_' . $form['#node_type']->type, FALSE) == TRUE;
@@ -133,7 +133,7 @@ function goo_gl_node_insert($node) {
       ))
       ->execute();
 
-    db_update('node') // Table name no longer needs {}
+    db_update('node')
       ->fields(array('goo_gl_url' => $goo_gl_url))
       ->condition('nid', $node->nid)
       ->execute();
@@ -163,10 +163,11 @@ function goo_gl_node_update($node) {
   // TO DO: Gucken, ob sich der Aliaspfad geändert hat und eine neue URL genieren,
   // aber vielleicht sollte das auch optional sein, immerhin gehen dann auch die
   // Analytics verloren und man würde das eher über Redirects machen ?!
-  if (isset($node->goo_gl_url)) {
-    $headers = get_headers($node->goo_gl_url , true);
-    dpm($headers['Location']);
-  }
+
+//  if (isset($node->goo_gl_url)) {
+//    $headers = get_headers($node->goo_gl_url, true);
+//    dpm($headers['Location']);
+//  }
 }
 
 /**
@@ -244,7 +245,7 @@ function _goo_gl_short_url($path, $alias) {
 function goo_gl_menu() {
 
   $items['admin/config/search/goo_gl'] = array(
-    'title'             => 'goo_gl (Google URL Shortener)',
+    'title'             => 'Google URL Shortener',
     'description'       => 'Enter an API key.',
     'weight'            => 100,
     'page callback'     => 'drupal_get_form',

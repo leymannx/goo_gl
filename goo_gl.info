@@ -1,4 +1,11 @@
 name = Google URL Shortener
-description = goo_gl
+description = Let Drupal create goo.gl short URLs automatically from node path or node path alias on node creation.
 core = 7.x
 package = Custom
+version = 7.x-1.0
+configure = admin/config/search/goo_gl
+files[] = goo_gl.install
+files[] = goo_gl.module
+files[] = goo_gl.admin.inc
+files[] = goo_gl.js
+files[] = README.md
