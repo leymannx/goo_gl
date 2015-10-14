@@ -53,7 +53,11 @@ function goo_gl_schema_alter(&$schema) {
 function goo_gl_html_head_alter(&$head_elements) {
 
   if ($node = menu_get_object('node')) {
-    if (variable_get('goo_gl_shortlink_' . $node->type, FALSE)) {
+
+    $goo_gl_enabled = variable_get('goo_gl_enabled_' . $node->type, FALSE);
+    $shortlink_enabled = variable_get('goo_gl_shortlink_' . $node->type, FALSE);
+    if ($goo_gl_enabled && $shortlink_enabled) {
+
       foreach ($head_elements as $key => $element) {
         $attributes = &$element['#attributes'];
         if (isset($attributes['rel']) && $attributes['rel'] == 'shortlink' && strpos($attributes['href'], 'node')) {
@@ -71,7 +75,11 @@ function goo_gl_html_head_alter(&$head_elements) {
 function goo_gl_preprocess_html(&$vars) {
 
   if ($node = menu_get_object('node')) {
-    if (variable_get('goo_gl_shortlink_' . $node->type, FALSE)) {
+
+    $goo_gl_enabled = variable_get('goo_gl_enabled_' . $node->type, FALSE);
+    $shortlink_enabled = variable_get('goo_gl_shortlink_' . $node->type, FALSE);
+    if ($goo_gl_enabled && $shortlink_enabled) {
+
       $data = array(
         '#type' => 'html_tag',
         '#tag' => 'link',
