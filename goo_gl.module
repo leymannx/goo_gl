@@ -55,7 +55,8 @@ function goo_gl_html_head_alter(&$head_elements) {
   if ($node = menu_get_object('node')) {
     if (variable_get('goo_gl_shortlink_' . $node->type, FALSE)) {
       foreach ($head_elements as $key => $element) {
-        if (isset($element['#attributes']['rel']) && $element['#attributes']['rel'] == 'shortlink' && strpos($element['#attributes']['href'], 'node')) {
+        $attributes = &$element['#attributes'];
+        if (isset($attributes['rel']) && $attributes['rel'] == 'shortlink' && strpos($attributes['href'], 'node')) {
           unset($head_elements[$key]);
         }
       }
@@ -113,7 +114,8 @@ function goo_gl_form_node_type_form_alter(&$form, &$form_state, $form_id) {
 
   $form['goo_gl']['note'] = array(
     '#prefix' => '<p>',
-    '#markup' => 'goo.gl will be available only after you entered a Google API key on the <a href="/admin/config/search/goo_gl">goo.gl config page</a>.',
+    '#markup' => 'goo.gl will be available only after you entered a Google API
+key on the <a href="/admin/config/search/goo_gl">goo.gl config page</a>.',
     '#suffix' => '</p>',
   );
 
@@ -260,6 +262,16 @@ function goo_gl_node_update($node) {
 //    $headers = get_headers($node->goo_gl_url, true);
 //    dpm($headers['Location']);
 //  }
+}
+
+/**
+ * Implements hook_node_delete().
+ */
+function goo_gl_node_delete($node) {
+  $nid = $node->nid;
+  db_delete('goo_gl_url')
+    ->condition('nid', $nid)
+    ->execute();
 }
 
 /**
