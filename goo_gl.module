@@ -160,9 +160,6 @@ key on the <a href="/admin/config/search/goo_gl">goo.gl config page</a>.',
       ),
     ),
   );
-  // TODO:
-  // - Option anbieten, ob per default der Systhempfad oder der Aliaspfad
-  //   genommen werden soll zum Generieren der Short URL?
 }
 
 /**
@@ -244,9 +241,6 @@ function goo_gl_node_insert($node) {
       ->condition('nid', $node->nid)
       ->execute();
   }
-  // TODO:
-  // - Variable abfragen, ob es per default der Systhempfad oder der Aliaspfad sein
-  //   soll (siehe oben)?
 }
 
 /**
@@ -266,7 +260,7 @@ function goo_gl_node_update($node) {
 
       $path_alias = base_path() . drupal_get_path_alias('node/' . $node->nid);
       $google_path = parse_url($absolute_location, PHP_URL_PATH);
-      if ($google_path != $path_alias) {
+      if ($google_path !== $path_alias) {
 
         $new_path = 'node/'.$node->nid;
         $new_absolute_path = url($new_path, array('absolute' => TRUE, 'alias' => TRUE));
