@@ -219,13 +219,11 @@ function goo_gl_node_insert($node) {
   $enabled = variable_get('goo_gl_enabled_' . $node->type, FALSE) == TRUE;
   if ($enabled) {
 
-    $path = 'node/'.$node->nid;
-    $absolute_path = url($path, array('absolute' => TRUE, 'alias' => TRUE));
+    // drupal_get_path_alias falls back to node path, if no alias available.
+    $alias = drupal_get_path_alias('node/' . $node->nid);
+    $long_url = url($alias, array('absolute' => TRUE, 'alias' => TRUE));
 
-    $alias = drupal_get_path_alias($path);
-    $absolute_alias = url($alias, array('absolute' => TRUE, 'alias' => TRUE));
-
-    $goo_gl_url = _goo_gl_short_url($absolute_path, $absolute_alias);
+    $goo_gl_url = _goo_gl_short_url($long_url);
 
     // Adds a new row to the singular goo_gl_url table.
     db_insert('goo_gl_url')
@@ -258,17 +256,14 @@ function goo_gl_node_update($node) {
       $headers = get_headers($node->goo_gl_url, true);
       $absolute_location = $headers['Location'];
 
-      $path_alias = base_path() . drupal_get_path_alias('node/' . $node->nid);
+      $source_path = base_path() . drupal_get_path_alias('node/' . $node->nid);
       $google_path = parse_url($absolute_location, PHP_URL_PATH);
-      if ($google_path !== $path_alias) {
+      if ($google_path !== $source_path) {
 
-        $new_path = 'node/'.$node->nid;
-        $new_absolute_path = url($new_path, array('absolute' => TRUE, 'alias' => TRUE));
+        $new_alias = drupal_get_path_alias('node/' . $node->nid);
+        $new_long_url = url($new_alias, array('absolute' => TRUE, 'alias' => TRUE));
 
-        $new_alias = drupal_get_path_alias($new_path);
-        $new_absolute_alias = url($new_alias, array('absolute' => TRUE, 'alias' => TRUE));
-
-        $new_goo_gl_url = _goo_gl_short_url($new_absolute_path, $new_absolute_alias);
+        $new_goo_gl_url = _goo_gl_short_url($new_long_url);
 
         // Adds a new row to the singular goo_gl_url table.
         db_update('goo_gl_url')
@@ -283,6 +278,16 @@ function goo_gl_node_update($node) {
           ->execute();
       }
     }
+  }
+}
+
+/**
+ * Implements hook_init().
+ */
+function goo_gl_init() {
+  if ($node = menu_get_object('node')) {
+    $path_alias = base_path() . drupal_get_path_alias('node/' . $node->nid);
+    dpm($path_alias);
   }
 }
 
@@ -319,9 +324,8 @@ function goo_gl_module_implements_alter(&$implementations, $hook) {
  * @param $alias Node path alias
  * @return mixed goo.gl short URL
  */
-function _goo_gl_short_url($path, $alias) {
+function _goo_gl_short_url($long_url) {
 
-  $long_url = (!empty($alias)) ? $alias : $path;
   $api_key = variable_get('goo_gl_api_key');
 
   // No need to modify any of the code below.
