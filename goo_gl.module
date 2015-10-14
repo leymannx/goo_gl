@@ -130,7 +130,8 @@ key on the <a href="/admin/config/search/goo_gl">goo.gl config page</a>.',
   $goo_gl_enabled = variable_get('goo_gl_enabled_' . $form['#node_type']->type, FALSE) == TRUE;
   $form['goo_gl']['goo_gl_enabled'] = array(
     '#type'           => 'checkbox',
-    '#title'          => t('Enable Google URL Shortening'),
+    '#title'          => t('Enable Google URL shortening'),
+    '#description'    => t('This will automatically create goo.gl short URLs from path aliases, fallback node path.'),
     '#default_value'  => $goo_gl_enabled,
   );
 
@@ -138,6 +139,7 @@ key on the <a href="/admin/config/search/goo_gl">goo.gl config page</a>.',
   $form['goo_gl']['goo_gl_shortlink'] = array(
     '#type'           => 'checkbox',
     '#title'          => t('Use goo.gl URL as shortlink instead of Drupal\'s node path'),
+    '#description'    => t('Example: ' . htmlentities('<link rel="shortlink" href="http://goo.gl/F45H3j"\>')),
     '#default_value'  => $shortlink_enabled,
     '#states'         => array(
       'visible' => array(
@@ -146,13 +148,21 @@ key on the <a href="/admin/config/search/goo_gl">goo.gl config page</a>.',
     ),
   );
 
+  $regeneration_enabled = variable_get('goo_gl_regeneration_' . $form['#node_type']->type, FALSE) == TRUE;
+  $form['goo_gl']['goo_gl_regeneration'] = array(
+    '#type'           => 'checkbox',
+    '#title'          => t('Regenerate goo.gl URL when the node path alias gets updated.'),
+    '#description'    => t('If you\'ve set automatic redirects on alias update, leave this unchecked.<br>By that you also can keep the statistics bound to one goo.gl URL.'),
+    '#default_value'  => $regeneration_enabled,
+    '#states'         => array(
+      'visible' => array(
+        ':input[name="goo_gl_enabled"]' => array('checked' => TRUE),
+      ),
+    ),
+  );
   // TODO:
   // - Option anbieten, ob per default der Systhempfad oder der Aliaspfad
   //   genommen werden soll zum Generieren der Short URL?
-  // - Option anbieten, was beim Ändern des Aliaspfads passieren soll. Weil
-  //   manche Leute haben ein Redirect-Modul und wollen auch nicht, dass ihre
-  //   Analytics auf die Short-URL verloren gehen. Soll die ShURL regeniert
-  //   werden oder soll sie bleiben?
 }
 
 /**
@@ -199,10 +209,6 @@ function goo_gl_form_alter(&$form, &$form_state, $form_id) {
       );
     }
   }
-
-  // TODO:
-  // - Variable abfragen was mit Re-Generate ist (siehe oben) und pro Node
-  //   individuell einstellbar machen.
 }
 
 /**
@@ -240,7 +246,7 @@ function goo_gl_node_insert($node) {
   }
   // TODO:
   // - Variable abfragen, ob es per default der Systhempfad oder der Aliaspfad sein
-  //   soll (siehe oben).
+  //   soll (siehe oben)?
 }
 
 /**
@@ -248,28 +254,42 @@ function goo_gl_node_insert($node) {
  */
 function goo_gl_node_update($node) {
 
-  // $enabled = variable_get('goo_gl_enabled_' . $node->type, FALSE) == TRUE;
-  // if ($enabled) {
+  $goo_gl_enabled = variable_get('goo_gl_enabled_' . $node->type, FALSE);
+  $regeneration_enabled = variable_get('goo_gl_regeneration_' . $node->type, FALSE);
+  if ($goo_gl_enabled && $regeneration_enabled) {
 
-  //   $path = 'node/'.$node->nid;
-  //   $alias = drupal_get_path_alias($path);
+    if (isset($node->goo_gl_url)) {
 
-  //   db_update('goo_gl_url')
-  //     ->condition('nid', $node->nid, '=')
-  //     ->fields(array('url' => $node->goo_gl_url))
-  //     ->execute();
-  // }
+      // Check where the goo.gl URL is redirecting to
+      $headers = get_headers($node->goo_gl_url, true);
+      $absolute_location = $headers['Location'];
 
-  // TODO:
-  // - Gucken, ob sich der Aliaspfad geändert hat und eine neue URL genieren,
-  //   aber vielleicht sollte das auch optional sein, immerhin gehen dann auch die
-  //   Analytics verloren und man würde das eher über Redirects machen ?!
+      $path_alias = base_path() . drupal_get_path_alias('node/' . $node->nid);
+      $google_path = parse_url($absolute_location, PHP_URL_PATH);
+      if ($google_path != $path_alias) {
 
-  // Check where the goo.gl URL is redirecting to
-//  if (isset($node->goo_gl_url)) {
-//    $headers = get_headers($node->goo_gl_url, true);
-//    dpm($headers['Location']);
-//  }
+        $new_path = 'node/'.$node->nid;
+        $new_absolute_path = url($new_path, array('absolute' => TRUE, 'alias' => TRUE));
+
+        $new_alias = drupal_get_path_alias($new_path);
+        $new_absolute_alias = url($new_alias, array('absolute' => TRUE, 'alias' => TRUE));
+
+        $new_goo_gl_url = _goo_gl_short_url($new_absolute_path, $new_absolute_alias);
+
+        // Adds a new row to the singular goo_gl_url table.
+        db_update('goo_gl_url')
+          ->fields(array('url' => $new_goo_gl_url))
+          ->condition('nid', $node->nid)
+          ->execute();
+
+        // Updates the goo_gl_url field of the corresponding node in the node table.
+        db_update('node')
+          ->fields(array('goo_gl_url' => $new_goo_gl_url))
+          ->condition('nid', $node->nid)
+          ->execute();
+      }
+    }
+  }
 }
 
 /**
@@ -298,22 +318,6 @@ function goo_gl_module_implements_alter(&$implementations, $hook) {
 }
 
 /**
- * Helper to @return string goo_gl_url by NID
- */
-function _goo_gl_get_url($nid) {
-
-  if(!empty($nid)) {
-    //  $results = db_query('select url from {goo_gl_url} where nid = :nid', array(':nid' => $nid));
-    $results = db_query('select goo_gl_url from {node} where nid = :nid', array(':nid' => $nid));
-    foreach($results as $result) {
-      return $result->goo_gl_url;
-    }
-  } else {
-    return '';
-  }
-}
-
-/**
  * Helper to create goo.gl short URL from path alias if available.
  * Fallback is to create short URL from node path.
  *
@@ -331,7 +335,7 @@ function _goo_gl_short_url($path, $alias) {
   $json_data = json_encode($post_data);
   $curl_obj = curl_init();
 
-  curl_setopt($curl_obj, CURLOPT_URL, 'https://www.googleapis.com/urlshortener/v1/url?key='.$api_key); 
+  curl_setopt($curl_obj, CURLOPT_URL, 'https://www.googleapis.com/urlshortener/v1/url?key='.$api_key);
   curl_setopt($curl_obj, CURLOPT_RETURNTRANSFER, 1);
   curl_setopt($curl_obj, CURLOPT_SSL_VERIFYPEER, 0);
   curl_setopt($curl_obj, CURLOPT_HEADER, 0);
@@ -344,4 +348,20 @@ function _goo_gl_short_url($path, $alias) {
   curl_close($curl_obj);
 
   return $json->id;
+}
+
+/**
+ * Helper to @return string goo_gl_url by NID
+ */
+function _goo_gl_get_url($nid) {
+
+  if(!empty($nid)) {
+    //  $results = db_query('select url from {goo_gl_url} where nid = :nid', array(':nid' => $nid));
+    $results = db_query('select goo_gl_url from {node} where nid = :nid', array(':nid' => $nid));
+    foreach($results as $result) {
+      return $result->goo_gl_url;
+    }
+  } else {
+    return '';
+  }
 }
