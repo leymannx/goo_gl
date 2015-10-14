@@ -18,9 +18,25 @@ function goo_gl_menu() {
     'description'       => 'Enter an API key.',
     'weight'            => 100,
     'page callback'     => 'drupal_get_form',
-    'page arguments'    => array('goo_gl_api_key_form'),
+    'page arguments'    => array('goo_gl_apikey'),
     'access arguments'  => array('administer site configuration'),
     'file'              => 'goo_gl.admin.inc'
+  );
+  $items['admin/config/search/goo_gl/settings'] = array(
+    'title' 						=> t('Settings'),
+    'description' 			=> 'Select social networks and node types to attach social buttons with counters',
+    'type' 							=> MENU_DEFAULT_LOCAL_TASK,
+    'weight' 						=> 10,
+  );
+  $items['admin/config/search/goo_gl/analytics'] = array(
+    'title' 						=> t('Analytics'),
+    'description' 			=> 'Select social networks and node types to attach social buttons with counters',
+    'page callback' 		=> 'drupal_get_form',
+    'page arguments'   	=> array('goo_gl_analytics'),
+    'access arguments'	=> array('administer site configuration'),
+    'file'              => 'goo_gl.admin.inc',
+    'type' 							=> MENU_LOCAL_TASK,
+    'weight' 						=> 20,
   );
 
   return $items;
@@ -223,7 +239,7 @@ function goo_gl_node_insert($node) {
     $alias = drupal_get_path_alias('node/' . $node->nid);
     $long_url = url($alias, array('absolute' => TRUE, 'alias' => TRUE));
 
-    $goo_gl_url = _goo_gl_short_url($long_url);
+    $goo_gl_url = _goo_gl_shorten_url($long_url);
 
     // Adds a new row to the singular goo_gl_url table.
     db_insert('goo_gl_url')
@@ -263,7 +279,7 @@ function goo_gl_node_update($node) {
         $new_alias = drupal_get_path_alias('node/' . $node->nid);
         $new_long_url = url($new_alias, array('absolute' => TRUE, 'alias' => TRUE));
 
-        $new_goo_gl_url = _goo_gl_short_url($new_long_url);
+        $new_goo_gl_url = _goo_gl_shorten_url($new_long_url);
 
         // Adds a new row to the singular goo_gl_url table.
         db_update('goo_gl_url')
@@ -278,16 +294,6 @@ function goo_gl_node_update($node) {
           ->execute();
       }
     }
-  }
-}
-
-/**
- * Implements hook_init().
- */
-function goo_gl_init() {
-  if ($node = menu_get_object('node')) {
-    $path_alias = base_path() . drupal_get_path_alias('node/' . $node->nid);
-    dpm($path_alias);
   }
 }
 
@@ -317,23 +323,21 @@ function goo_gl_module_implements_alter(&$implementations, $hook) {
 }
 
 /**
- * Helper to create goo.gl short URL from path alias if available.
- * Fallback is to create short URL from node path.
+ * Helper to create goo.gl short URL from given long URL.
  *
- * @param $path Drupal node path (node/123)
- * @param $alias Node path alias
+ * @param $long_url string
  * @return mixed goo.gl short URL
  */
-function _goo_gl_short_url($long_url) {
+function _goo_gl_shorten_url($long_url) {
 
   $api_key = variable_get('goo_gl_api_key');
 
   // No need to modify any of the code below.
-  $post_data = array('longUrl' => $long_url, 'key' => $api_key);
+  $post_data = array('longUrl' => $long_url);
   $json_data = json_encode($post_data);
   $curl_obj = curl_init();
 
-  curl_setopt($curl_obj, CURLOPT_URL, 'https://www.googleapis.com/urlshortener/v1/url?key='.$api_key);
+  curl_setopt($curl_obj, CURLOPT_URL, 'https://www.googleapis.com/urlshortener/v1/url?key=' . $api_key);
   curl_setopt($curl_obj, CURLOPT_RETURNTRANSFER, 1);
   curl_setopt($curl_obj, CURLOPT_SSL_VERIFYPEER, 0);
   curl_setopt($curl_obj, CURLOPT_HEADER, 0);
@@ -342,6 +346,7 @@ function _goo_gl_short_url($long_url) {
   curl_setopt($curl_obj, CURLOPT_POSTFIELDS, $json_data);
 
   $response = curl_exec($curl_obj);
+  //change the response json string to object
   $json = json_decode($response);
   curl_close($curl_obj);
 
@@ -361,5 +366,14 @@ function _goo_gl_get_url($nid) {
     }
   } else {
     return '';
+  }
+}
+
+/**
+ * Implements hook_init().
+ */
+function goo_gl_init() {
+  if ($node = menu_get_object('node')) {
+
   }
 }
