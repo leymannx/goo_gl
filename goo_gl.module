@@ -6,6 +6,85 @@
  */
 
 /**
+ * Implements hook_menu().
+ *
+ * Adds a menu entry on the config page to display a form to enter a mandatory
+ * Google API key.
+ */
+function goo_gl_menu() {
+
+  $items['admin/config/search/goo_gl'] = array(
+    'title'             => 'Google URL Shortener',
+    'description'       => 'Enter an API key.',
+    'weight'            => 100,
+    'page callback'     => 'drupal_get_form',
+    'page arguments'    => array('goo_gl_api_key_form'),
+    'access arguments'  => array('administer site configuration'),
+    'file'              => 'goo_gl.admin.inc'
+  );
+
+  return $items;
+}
+
+/**
+ * Implements hook_schema_alter().
+ *
+ * Adds a new field to the node table where Google's short URL will get
+ * stored, so that you later can pull the short URL directly from the
+ * node object $node->goo_gl_url.
+ */
+function goo_gl_schema_alter(&$schema) {
+
+  $schema['node']['fields']['goo_gl_url'] = array(
+    'description' => 'The shortened URL.',
+    'type' => 'varchar',
+    'length' => 20,
+    'not null' => TRUE,
+    'default' => '',
+  );
+}
+
+/**
+ * Implements hook_html_head_alter().
+ *  Unset Drupal's shortlink.
+ *
+ * @see https://www.drupal.org/node/1304038
+ */
+function goo_gl_html_head_alter(&$head_elements) {
+
+  if ($node = menu_get_object('node')) {
+    if (variable_get('goo_gl_shortlink_' . $node->type, FALSE)) {
+      foreach ($head_elements as $key => $element) {
+        if (isset($element['#attributes']['rel']) && $element['#attributes']['rel'] == 'shortlink' && strpos($element['#attributes']['href'], 'node')) {
+          unset($head_elements[$key]);
+        }
+      }
+    }
+  }
+}
+
+/**
+ * Implements hook_preprocess_HOOK().
+ *   Set goo_gl shortlink.
+ */
+function goo_gl_preprocess_html(&$vars) {
+
+  if ($node = menu_get_object('node')) {
+    if (variable_get('goo_gl_shortlink_' . $node->type, FALSE)) {
+      $data = array(
+        '#type' => 'html_tag',
+        '#tag' => 'link',
+        '#attributes' => array(
+          'rel' => 'shortlink',
+          'href' => $node->goo_gl_url,
+        ),
+      );
+      drupal_add_html_head($data, 'goo_gl_shortlink');
+    }
+  }
+}
+
+/**
  * Implements hook_form_FORM_ID_alter().
  *
  * Adds custom fieldset to the node type configuration form
@@ -25,10 +104,6 @@ function goo_gl_form_node_type_form_alter(&$form, &$form_state, $form_id) {
     '#weight'       => -99,
     '#group'        => 'additional_settings',
     '#disabled'     => isset($api_key) ? (empty($api_key) ? TRUE : FALSE) : TRUE,
-    // Vertical tabs provide its most usable appearance when they are used to
-    // include a summary of the information contained in the fieldset. To do
-    // this, we attach additional JavaScript to handle changing the summary
-    // when form settings are changed.
     '#attached'     => array(
       'js' => array(
         'vertical-tabs' => drupal_get_path('module', 'goo_gl') . '/goo_gl.js',
@@ -37,23 +112,37 @@ function goo_gl_form_node_type_form_alter(&$form, &$form_state, $form_id) {
   );
 
   $form['goo_gl']['note'] = array(
-    '#markup'       => 'goo.gl will be available only after you entered a Google API key on the <a href="/admin/config/search/goo_gl">goo.gl config page</a>.',
+    '#prefix' => '<p>',
+    '#markup' => 'goo.gl will be available only after you entered a Google API key on the <a href="/admin/config/search/goo_gl">goo.gl config page</a>.',
+    '#suffix' => '</p>',
   );
 
-  $enabled = variable_get('goo_gl_enabled_' . $form['#node_type']->type, FALSE) == TRUE;
+  $goo_gl_enabled = variable_get('goo_gl_enabled_' . $form['#node_type']->type, FALSE) == TRUE;
   $form['goo_gl']['goo_gl_enabled'] = array(
     '#type'           => 'checkbox',
-    '#title'          => t('Enable'),
-    '#default_value'  => $enabled,
+    '#title'          => t('Enable Google URL Shortening'),
+    '#default_value'  => $goo_gl_enabled,
   );
 
-  // TO DO:
-  // 1. Option anbieten, ob per default der Systhempfad oder der Aliaspfad
-  // genommen werden soll zum Generieren der Short URL.
-  // 2. Option anbieten, was beim Ändern des Aliaspfads passieren soll. Weil
-  // manche Leute haben ein Redirect-Modul und wollen auch nicht, dass ihre
-  // Analytics auf die Short-URL verloren gehen. Soll die ShURL regeniert
-  // werden oder soll sie bleiben?
+  $shortlink_enabled = variable_get('goo_gl_shortlink_' . $form['#node_type']->type, FALSE) == TRUE;
+  $form['goo_gl']['goo_gl_shortlink'] = array(
+    '#type'           => 'checkbox',
+    '#title'          => t('Use goo.gl URL as shortlink instead of Drupal\'s node path'),
+    '#default_value'  => $shortlink_enabled,
+    '#states'         => array(
+      'visible' => array(
+        ':input[name="goo_gl_enabled"]' => array('checked' => TRUE),
+      ),
+    ),
+  );
+
+  // TODO:
+  // - Option anbieten, ob per default der Systhempfad oder der Aliaspfad
+  //   genommen werden soll zum Generieren der Short URL?
+  // - Option anbieten, was beim Ändern des Aliaspfads passieren soll. Weil
+  //   manche Leute haben ein Redirect-Modul und wollen auch nicht, dass ihre
+  //   Analytics auf die Short-URL verloren gehen. Soll die ShURL regeniert
+  //   werden oder soll sie bleiben?
 }
 
 /**
@@ -101,9 +190,9 @@ function goo_gl_form_alter(&$form, &$form_state, $form_id) {
     }
   }
 
-  // TO DO:
-  // 1. Variable abfragen was mit Re-Generate ist (siehe oben) und pro Node
-  // individuell einstellbar machen.
+  // TODO:
+  // - Variable abfragen was mit Re-Generate ist (siehe oben) und pro Node
+  //   individuell einstellbar machen.
 }
 
 /**
@@ -139,8 +228,9 @@ function goo_gl_node_insert($node) {
       ->condition('nid', $node->nid)
       ->execute();
   }
-  // TO DO: Variable abfragen, ob es per default der Systhempfad oder der Aliaspfad sein
-  // soll (siehe oben).
+  // TODO:
+  // - Variable abfragen, ob es per default der Systhempfad oder der Aliaspfad sein
+  //   soll (siehe oben).
 }
 
 /**
@@ -160,9 +250,10 @@ function goo_gl_node_update($node) {
   //     ->execute();
   // }
 
-  // TO DO: Gucken, ob sich der Aliaspfad geändert hat und eine neue URL genieren,
-  // aber vielleicht sollte das auch optional sein, immerhin gehen dann auch die
-  // Analytics verloren und man würde das eher über Redirects machen ?!
+  // TODO:
+  // - Gucken, ob sich der Aliaspfad geändert hat und eine neue URL genieren,
+  //   aber vielleicht sollte das auch optional sein, immerhin gehen dann auch die
+  //   Analytics verloren und man würde das eher über Redirects machen ?!
 
   // Check where the goo.gl URL is redirecting to
 //  if (isset($node->goo_gl_url)) {
@@ -180,7 +271,6 @@ function goo_gl_node_update($node) {
 function goo_gl_module_implements_alter(&$implementations, $hook) {
 
   if ($hook == 'node_insert' || $hook == 'node_update') {
-    // Move goo_gl_node_insert()/-update() to the end of the list. 
     $group = $implementations['goo_gl'];
     unset($implementations['goo_gl']);
     $implementations['goo_gl'] = $group;
@@ -193,11 +283,9 @@ function goo_gl_module_implements_alter(&$implementations, $hook) {
 function _goo_gl_get_url($nid) {
 
   if(!empty($nid)) {
-    // action
-//    $results = db_query('select url from {goo_gl_url} where nid = :nid', array(':nid' => $nid));
+    //  $results = db_query('select url from {goo_gl_url} where nid = :nid', array(':nid' => $nid));
     $results = db_query('select goo_gl_url from {node} where nid = :nid', array(':nid' => $nid));
     foreach($results as $result) {
-      // dpm($result);
       return $result->goo_gl_url;
     }
   } else {
@@ -236,36 +324,4 @@ function _goo_gl_short_url($path, $alias) {
   curl_close($curl_obj);
 
   return $json->id;
-}
-
-/**
- * Implements hook_menu().
- *
- * Adds a menu entry on the config page to display a form to enter a mandatory
- * Google API key.
- */
-function goo_gl_menu() {
-
-  $items['admin/config/search/goo_gl'] = array(
-    'title'             => 'Google URL Shortener',
-    'description'       => 'Enter an API key.',
-    'weight'            => 100,
-    'page callback'     => 'drupal_get_form',
-    'page arguments'    => array('goo_gl_api_key_form'),
-    'access arguments'  => array('administer site configuration'),
-    'file'              => 'goo_gl.admin.inc'
-  );
-  
-  return $items;
-}
-
-function goo_gl_schema_alter(&$schema) {
-  // Add the new field to the schema cache
-  $schema['node']['fields']['goo_gl_url'] = array(
-    'description' => 'The shortened URL.',
-    'type' => 'varchar',
-    'length' => 20,
-    'not null' => TRUE,
-    'default' => '',
-  );
 }
