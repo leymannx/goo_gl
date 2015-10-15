@@ -332,7 +332,6 @@ function _goo_gl_shorten_url($long_url) {
 
   $api_key = variable_get('goo_gl_api_key');
 
-  // No need to modify any of the code below.
   $post_data = array('longUrl' => $long_url);
   $json_data = json_encode($post_data);
   $curl_obj = curl_init();
