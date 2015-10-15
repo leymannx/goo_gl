@@ -259,48 +259,34 @@ function goo_gl_node_insert($node) {
 
 /**
  * Implements hook_node_update()
+ *
+ * Optionally regeneration of short URL.
  */
 function goo_gl_node_update($node) {
 
-  $goo_gl_enabled = variable_get('goo_gl_enabled_' . $node->type, FALSE);
-  $regeneration_enabled = variable_get('goo_gl_regeneration_' . $node->type, FALSE);
-  if ($goo_gl_enabled && $regeneration_enabled) {
+  _goo_gl_regenerate($node);
+}
 
-    if (isset($node->goo_gl_url)) {
+/**
+ * Implements hook_pathauto_alias_alter().
+ *
+ * Optionally regeneration of short URL.
+ */
+function goo_gl_pathauto_alias_alter(&$alias, array &$context) {
 
-      // Check where the goo.gl URL is redirecting to
-      $headers = get_headers($node->goo_gl_url, true);
-      $absolute_location = $headers['Location'];
+  $source_path = drupal_lookup_path('source', $alias);
+  $source = explode('/', $source_path);
+  $nid = $source[1];
+  $node = node_load($nid);
 
-      $source_path = base_path() . drupal_get_path_alias('node/' . $node->nid);
-      $google_path = parse_url($absolute_location, PHP_URL_PATH);
-      if ($google_path !== $source_path) {
-
-        $new_alias = drupal_get_path_alias('node/' . $node->nid);
-        $new_long_url = url($new_alias, array('absolute' => TRUE, 'alias' => TRUE));
-
-        $new_goo_gl_url = _goo_gl_shorten_url($new_long_url);
-
-        // Adds a new row to the singular goo_gl_url table.
-        db_update('goo_gl_url')
-          ->fields(array('url' => $new_goo_gl_url))
-          ->condition('nid', $node->nid)
-          ->execute();
-
-        // Updates the goo_gl_url field of the corresponding node in the node table.
-        db_update('node')
-          ->fields(array('goo_gl_url' => $new_goo_gl_url))
-          ->condition('nid', $node->nid)
-          ->execute();
-      }
-    }
-  }
+  _goo_gl_regenerate($node);
 }
 
 /**
  * Implements hook_node_delete().
  */
 function goo_gl_node_delete($node) {
+
   $nid = $node->nid;
   db_delete('goo_gl_url')
     ->condition('nid', $nid)
@@ -315,7 +301,8 @@ function goo_gl_node_delete($node) {
  */
 function goo_gl_module_implements_alter(&$implementations, $hook) {
 
-  if ($hook == 'node_insert' || $hook == 'node_update') {
+  $hooks = array('node_insert', 'node_update', 'node_delete', 'pathauto_alias_alter');
+  if (in_array($hook, $hooks)) {
     $group = $implementations['goo_gl'];
     unset($implementations['goo_gl']);
     $implementations['goo_gl'] = $group;
@@ -353,6 +340,49 @@ function _goo_gl_shorten_url($long_url) {
 }
 
 /**
+ * Helper to optionally regenerate goo.gl URLs if long URL changed.
+ *
+ * @param $node
+ *   The node object.
+ */
+function _goo_gl_regenerate($node) {
+
+  $goo_gl_enabled = variable_get('goo_gl_enabled_' . $node->type, FALSE);
+  $regeneration_enabled = variable_get('goo_gl_regeneration_' . $node->type, FALSE);
+  if ($goo_gl_enabled && $regeneration_enabled) {
+
+    if (isset($node->goo_gl_url)) {
+
+      // Check where the goo.gl URL is redirecting to
+      $headers = get_headers($node->goo_gl_url, true);
+      $absolute_location = $headers['Location'];
+
+      $source_path = base_path() . drupal_get_path_alias('node/' . $node->nid);
+      $google_path = parse_url($absolute_location, PHP_URL_PATH);
+      if ($google_path !== $source_path) {
+
+        $new_alias = drupal_get_path_alias('node/' . $node->nid);
+        $new_long_url = url($new_alias, array('absolute' => TRUE, 'alias' => TRUE));
+
+        $new_goo_gl_url = _goo_gl_shorten_url($new_long_url);
+
+        // Adds a new row to the singular goo_gl_url table.
+        db_update('goo_gl_url')
+          ->fields(array('url' => $new_goo_gl_url))
+          ->condition('nid', $node->nid)
+          ->execute();
+
+        // Updates the goo_gl_url field of the corresponding node in the node table.
+        db_update('node')
+          ->fields(array('goo_gl_url' => $new_goo_gl_url))
+          ->condition('nid', $node->nid)
+          ->execute();
+      }
+    }
+  }
+}
+
+/**
  * Helper to @return string goo_gl_url by NID
  */
 function _goo_gl_get_url($nid) {
@@ -365,14 +395,5 @@ function _goo_gl_get_url($nid) {
     }
   } else {
     return '';
-  }
-}
-
-/**
- * Implements hook_init().
- */
-function goo_gl_init() {
-  if ($node = menu_get_object('node')) {
-
   }
 }
