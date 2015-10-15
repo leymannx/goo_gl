@@ -14,5 +14,11 @@ Installation:
 * Go to a content type settings form (e.g. `admin/structure/types/manage/article`) and enable goo_gl in the available vertical tabs form.
 * Add a new node and have a goo.gl short URL generated automatically, visible in the vertical tabs and available from `$node->goo_gl_url`.
 
+After you created your first nodes with a short link associated you can check `admin/config/search/goo_gl/analytics` for an overview of all short links.
+
+Additional options:
+* Use goo.gl URL as shortlink instead of Drupal's node path
+* Regenerate goo.gl URL when the node path alias gets updated.
+
 TODO:
-* Offer statistics
+- make analytics config tab load faster
