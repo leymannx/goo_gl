@@ -274,7 +274,7 @@ function goo_gl_node_update($node) {
  */
 function goo_gl_pathauto_alias_alter(&$alias, array &$context) {
 
-  if ($context['op'] != 'insert') {
+  if ($context['module'] == 'node' && $context['op'] != 'insert') {
     $source_path = drupal_lookup_path('source', $alias);
     $source = explode('/', $source_path);
     $nid = $source[1];
