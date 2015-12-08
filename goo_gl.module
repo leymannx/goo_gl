@@ -23,10 +23,10 @@ function goo_gl_menu() {
     'file'              => 'goo_gl.admin.inc'
   );
   $items['admin/config/search/goo_gl/settings'] = array(
-    'title' 						=> t('Settings'),
-    'description' 			=> 'Select social networks and node types to attach social buttons with counters',
-    'type' 							=> MENU_DEFAULT_LOCAL_TASK,
-    'weight' 						=> 10,
+    'title'             => t('Settings'),
+    'description'       => 'Select social networks and node types to attach social buttons with counters',
+    'type'              => MENU_DEFAULT_LOCAL_TASK,
+    'weight'            => 10,
   );
   $items['admin/config/search/goo_gl/analytics'] = array(
     'title' 						=> t('Analytics'),
@@ -53,10 +53,10 @@ function goo_gl_schema_alter(&$schema) {
 
   $schema['node']['fields']['goo_gl_url'] = array(
     'description' => 'The shortened URL.',
-    'type' => 'varchar',
-    'length' => 20,
-    'not null' => TRUE,
-    'default' => '',
+    'type'        => 'varchar',
+    'length'      => 20,
+    'not null'    => TRUE,
+    'default'     => '',
   );
 }
 
@@ -97,8 +97,8 @@ function goo_gl_preprocess_html(&$vars) {
     if ($goo_gl_enabled && $shortlink_enabled) {
 
       $data = array(
-        '#type' => 'html_tag',
-        '#tag' => 'link',
+        '#type'       => 'html_tag',
+        '#tag'        => 'link',
         '#attributes' => array(
           'rel' => 'shortlink',
           'href' => $node->goo_gl_url,
