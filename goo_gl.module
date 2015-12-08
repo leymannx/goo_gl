@@ -29,14 +29,14 @@ function goo_gl_menu() {
     'weight'            => 10,
   );
   $items['admin/config/search/goo_gl/analytics'] = array(
-    'title' 						=> t('Analytics'),
-    'description' 			=> 'Select social networks and node types to attach social buttons with counters',
-    'page callback' 		=> 'drupal_get_form',
-    'page arguments'   	=> array('goo_gl_analytics'),
-    'access arguments'	=> array('administer site configuration'),
+    'title'             => t('Analytics'),
+    'description'       => 'Select social networks and node types to attach social buttons with counters',
+    'page callback'     => 'drupal_get_form',
+    'page arguments'    => array('goo_gl_analytics'),
+    'access arguments'  => array('administer site configuration'),
     'file'              => 'goo_gl.admin.inc',
-    'type' 							=> MENU_LOCAL_TASK,
-    'weight' 						=> 20,
+    'type'              => MENU_LOCAL_TASK,
+    'weight'            => 20,
   );
 
   return $items;
