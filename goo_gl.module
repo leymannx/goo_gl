@@ -8,8 +8,8 @@
 /**
  * Implements hook_menu().
  *
- * Adds a menu entry on the config page to display a form to enter a mandatory
- * Google API key.
+ *   Adds a menu entry on the config page to display a form to enter a mandatory
+ *   Google API key.
  */
 function goo_gl_menu() {
 
@@ -45,9 +45,9 @@ function goo_gl_menu() {
 /**
  * Implements hook_schema_alter().
  *
- * Adds a new field to the node table where Google's short URL will get
- * stored, so that you later can pull the short URL directly from the
- * node object $node->goo_gl_url.
+ *   Adds a new field to the node table where Google's short URL will get
+ *   stored, so that you later can pull the short URL directly from the
+ *   node object $node->goo_gl_url.
  */
 function goo_gl_schema_alter(&$schema) {
 
@@ -62,9 +62,9 @@ function goo_gl_schema_alter(&$schema) {
 
 /**
  * Implements hook_html_head_alter().
- *  Unset Drupal's shortlink.
  *
- * @see https://www.drupal.org/node/1304038
+ *   Unset Drupal's shortlink.
+ *   @see https://www.drupal.org/node/1304038
  */
 function goo_gl_html_head_alter(&$head_elements) {
 
@@ -86,6 +86,7 @@ function goo_gl_html_head_alter(&$head_elements) {
 
 /**
  * Implements hook_preprocess_HOOK().
+ *
  *   Set goo_gl shortlink.
  */
 function goo_gl_preprocess_html(&$vars) {
@@ -112,10 +113,9 @@ function goo_gl_preprocess_html(&$vars) {
 /**
  * Implements hook_form_FORM_ID_alter().
  *
- * Adds custom fieldset to the node type configuration form
- * where goo_gl simply can be made available/unavailable for a node type
- *
- * @see goo_gl.js
+ *   Adds custom fieldset to the node type configuration form
+ *   where goo_gl simply can be made available/unavailable for a node type.
+ *   @see goo_gl.js
  */
 function goo_gl_form_node_type_form_alter(&$form, &$form_state, $form_id) {
 
@@ -181,11 +181,11 @@ key on the <a href="/admin/config/search/goo_gl">goo.gl config page</a>.',
 /**
  * Implements hook_form_alter().
  *
- * Adds custom fieldset to the node edit form
- * with a checkbox to reload the goo_gl url
- * and a textfield to display it or manually enter a url
+ *   Adds custom fieldset to the node edit form
+ *   with a checkbox to reload the goo_gl url
+ *   and a textfield to display it or manually enter a url
  *
- * @see goo_gl.js
+ *   @see goo_gl.js
  */
 function goo_gl_form_alter(&$form, &$form_state, $form_id) {
 
@@ -227,8 +227,8 @@ function goo_gl_form_alter(&$form, &$form_state, $form_id) {
 /**
  * Implements hook_node_insert().
  *
- * As a new node is being inserted into the database, we need to do our own
- * database inserts.
+ *   As a new node is being inserted into the database, we need to do our own
+ *   database inserts.
  */
 function goo_gl_node_insert($node) {
 
@@ -260,7 +260,7 @@ function goo_gl_node_insert($node) {
 /**
  * Implements hook_node_update()
  *
- * Optionally regeneration of short URL.
+ *   Optionally regeneration of short URL.
  */
 function goo_gl_node_update($node) {
 
@@ -270,7 +270,7 @@ function goo_gl_node_update($node) {
 /**
  * Implements hook_pathauto_alias_alter().
  *
- * Optionally regeneration of short URL.
+ *   Optionally regeneration of short URL.
  */
 function goo_gl_pathauto_alias_alter(&$alias, array &$context) {
 
@@ -298,8 +298,8 @@ function goo_gl_node_delete($node) {
 /**
  * Implements hook_module_implements_alter()
  *
- * To have the alias path available in hook_node_insert() we let any alias
- * path creating modules act first and move goo_gl to the end of the list.
+ *   To have the alias path available in hook_node_insert() we let any alias
+ *   path creating modules act first and move goo_gl to the end of the list.
  */
 function goo_gl_module_implements_alter(&$implementations, $hook) {
 
@@ -314,8 +314,8 @@ function goo_gl_module_implements_alter(&$implementations, $hook) {
 /**
  * Helper to create goo.gl short URL from given long URL.
  *
- * @param $long_url string
- * @return mixed goo.gl short URL
+ *   @param $long_url string
+ *   @return mixed goo.gl short URL
  */
 function _goo_gl_shorten_url($long_url) {
 
@@ -344,8 +344,7 @@ function _goo_gl_shorten_url($long_url) {
 /**
  * Helper to optionally regenerate goo.gl URLs if long URL changed.
  *
- * @param $node
- *   The node object.
+ *   @param $node The node object.
  */
 function _goo_gl_regenerate($node) {
 
